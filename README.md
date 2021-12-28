@@ -18,4 +18,7 @@ open `main.py` and go to line #21 and change the chrome binary path.
 
 ### 3 - Run it !
 
-just run the `main.py` file
+```py
+pip install -r requirements.txt
+python main.py
+```
