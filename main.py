@@ -18,8 +18,10 @@ from pathlib import Path
 base_url = "https://educative.io"
 
 options = webdriver.ChromeOptions()
+# change this one according to where you have the binary
 options.binary_location = "D:\workspace\chrome.sync\Chrome-bin\chrome.exe"
 options.headless = True
+options.add_argument("--log-level=3")
 s = Service(ChromeDriverManager().install())
 driver = webdriver.Chrome(service=s, options=options)
 # driver.maximize_window()
@@ -54,18 +56,16 @@ def login(email, password):
 
 def getCourseContentsLinks():
     """
-      return an object that contains the categories and its links
-      e.g: {
-          categories: ['Getting started'],
-          links: [ [{name: '...', url: '/courses/...'}, ...], [...], ... ]
-          }
+    loop throught the course contents, get the categories and the lessons for each category
+    @returns: a dict
     """
-    # menu = document.querySelector(".course-category-hover").parentNode.querySelectorAll("menu a")
+
     menu = driver.execute_script("""
       // category and links indexes will be the same here
       let data = {
-         categories: [],
-         links: []
+        totalLessons: 0,
+        categories: [],
+        links: []
       }
       let categories = document.querySelectorAll(".course-category-hover")
       for(let i = 0; i < categories.length; i++){
@@ -77,6 +77,7 @@ def getCourseContentsLinks():
                 name: menuLinks[j].querySelector('span').textContent,
                 url: menuLinks[j].getAttribute("href")
             })
+            data.totalLessons += 1
          }
          data.categories.push(category)
          data.links.push(menu)
@@ -90,21 +91,28 @@ def getCourseContentsLinks():
 def cleanFileName(name):
     return str(name).replace(":", "-").replace("?", "")
 
-# url example: https://www.educative.io/courses/grokking-computer-networking
 
+def downloadCourse(whereToSaveIt, url):
+    # url example: https://www.educative.io/courses/grokking-computer-networking
+    """
+    navigate to the lesson link, take a screenshot and convert it to pdf
 
-def downloadCourse(url):
+    @params: <url> = course url, example is above
+    @returns: a stats dict which has the total lessons and the successfully downloaded files.
+    """
     try:
         driver.get(url)
         sleep(1)
         courseName = driver.execute_script("return document.title")
-        pathToSaveEverything = courseName
+        pathToSaveEverything = os.path.join(whereToSaveIt, courseName)
         Path(pathToSaveEverything).mkdir(parents=True, exist_ok=True)
-
+        downloadedFiles = 0
         content = getCourseContentsLinks()
-        # TODO: take screenshot, convert it to pdf, save the pdf in the category directory and remove the screenshot
+        stats = {
+            "totalLessons": content.get("totalLessons"),
+            "totalDownloaded": 0
+        }
         for i, categoryName in enumerate(content.get("categories")):
-            # opening from filename
             print("\n")
             print(categoryName)
             print("-------------------------------------")
@@ -113,69 +121,91 @@ def downloadCourse(url):
 
             Path(courseCategoryDir).mkdir(parents=True, exist_ok=True)
 
-            #! TODO: FIX THIS
             for course in content.get("links")[i]:
-                pdfFileName = course.get("name") + ".pdf"
-                screenShotImg = takeScreenShot(base_url+course.get("url"))
-                # sleep(2)
-                print(course.get("name") + " DONE !")
-                # os.rename(screenShotImg, os.path.join(
-                #     courseCategoryDir, cleanFileName(screenShotImg)))
-                # with open(os.path.join(courseCategoryDir, pdfFileName), "wb") as f:
-                #     f.write(img2pdf.convert(screenShotImg))
-                #     os.remove(screenShotImg)
-                # print(course)
-                # move the converted pdf to the right course category dir
-                # os.rename(pdfFileName, os.path.join(
-                #     courseCategoryDir, pdfFileName))
-                #   os.remove(path)
-        return courseName
+                pdfFileName = cleanFileName(course.get("name") + ".pdf")
+                pdfFilePath = os.path.join(courseCategoryDir, pdfFileName)
+
+                screenShotImgName = cleanFileName(course.get("name")+".png")
+                screenShotImgPath = os.path.join(
+                    courseCategoryDir, screenShotImgName)
+                isScreenShoted = takeScreenShot(
+                    base_url+course.get("url"), screenShotImgPath)
+                # screenshot is not taken
+                if isScreenShoted == False:
+                    continue
+
+                with open(pdfFilePath, "wb") as f:
+                    img2pdf
+                    f.write(img2pdf.convert(screenShotImgPath))
+                    os.remove(screenShotImgPath)
+                    print("Downloaded: [" + course.get("name")+"]")
+                    downloadedFiles += 1
+
+        stats["totalDownloaded"] = downloadedFiles
+        return stats
     except Exception as e:
         print(e)
         return e
 
 
-def takeScreenShot(url):
+def takeScreenShot(url, savingPath):
     """
     @params: <url> which is the course url
-    @returns: the screenshot file name if success else it returns an Exception
+    @returns: True if success else it returns False
     """
     try:
         driver.get(url)
-        sleep(6)
+        sleep(10)
 
         screenShotFileName = driver.execute_script("return document.title")
-        screenShot = cleanFileName(screenShotFileName)+".png"
-        # # document.body.parentNode.scroll(Height || Width) => int
 
         def getWindowLen(X): return driver.execute_script(
             "return document.body.parentNode.scroll"+X)
 
         driver.set_window_size(getWindowLen("Width"), getWindowLen("Height"))
-        driver.find_element_by_tag_name(
-            "body").screenshot(screenShotFileName+".png")
+        isSaved = driver.find_element_by_tag_name(
+            "body").screenshot(savingPath)
+        if isSaved == False:
+            # print(f"\n\n NOT SAVED ({savingPath}) !!! \n\n")
+            return False
         sleep(1)
-        # driver.quit()
-        return screenShot
+
     except Exception as e:
-        return e
+        return False
 
-
-# courseName = downloadCourse(
-#     "https://www.educative.io/courses/grokking-computer-networking")
 
 if __name__ == "__main__":
-    print("DOWNLOADING...")
-    courseName = ""
     try:
-        #! FIX THE LOGIN
-        login("contactwassim016@gmail.com", "Wassim_005")
-        print("\n Logging in... \n")
-        sleep(3)
-        courseName = downloadCourse(
-            "https://www.educative.io/courses/grokking-computer-networking")
+
+        # getting the data
+        print("\n\n ------------------------------------------------------- \n")
+        email = input("Your educative.io email: ")
+        password = input("your password: ")
+        print("\n")
+        courseUrl = input("Course url: ")
+        saveDir = input("Path to save this course: ")
+        print("\n ------------------------------------------------------- \n")
+
+        # the real stuff
+        result = login(email, password)
+        if result != True:
+            print("LOGIN ERROR")
+            raise Exception()
+
+        print("\n LOGGING IN... \n")
+        sleep(3)  # wait until we login
+        print("\n DOWNLOADING... \n")
+        downloadStats = downloadCourse(saveDir, courseUrl)
+
+        print(f"""
+            \n FINISHED. \n
+            Total lessons: {downloadStats.get("totalLessons")}
+            \n
+            Total downloaded: {downloadStats.get("totalDownloaded")}
+        """)
+
     except Exception as e:
         print("\n Failed !!")
         print(e)
-    # finally:
-    #     driver.quit()
+    finally:
+        driver.quit()
