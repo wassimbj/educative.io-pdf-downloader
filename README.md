@@ -2,7 +2,7 @@
 
 ## Note
 
-this is not a hacking tool or something like that, it doesn't get you paid courses for free. BUT it downloads the courses in pdf and an organised manner.
+this is not a hacking tool or something like that, it doesn't get you paid courses for free. BUT it downloads the courses in pdf and in an organised manner.
 
 ## Usage
 
