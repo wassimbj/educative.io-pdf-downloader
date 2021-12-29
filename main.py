@@ -24,7 +24,7 @@ options.headless = True
 options.add_argument("--log-level=3")
 s = Service(ChromeDriverManager().install())
 driver = webdriver.Chrome(service=s, options=options)
-# driver.maximize_window()
+driver.maximize_window()
 driver.set_window_size(1700, 1700)  # you can change this based on your PC
 
 
@@ -132,6 +132,7 @@ def downloadCourse(whereToSaveIt, url):
                     base_url+course.get("url"), screenShotImgPath)
                 # screenshot is not taken
                 if isScreenShoted == False:
+                    print("NOT Downloaded: [" +screenShotImgName+"]")
                     continue
 
                 with open(pdfFilePath, "wb") as f:
@@ -162,7 +163,7 @@ def takeScreenShot(url, savingPath):
         def getWindowLen(X): return driver.execute_script(
             "return document.body.parentNode.scroll"+X)
 
-        driver.set_window_size(getWindowLen("Width"), getWindowLen("Height"))
+        driver.set_window_size(1700, getWindowLen("Height"))
         isSaved = driver.find_element_by_tag_name(
             "body").screenshot(savingPath)
         if isSaved == False:
