@@ -6,17 +6,17 @@ this is not a hacking tool or something like that, it doesn't get you paid cours
 
 ## Usage
 
-### 1 - Download this repo
+### 1 - Clone this repo
 
 ### 2 - Download chrome binary (if you don't have it)
 
 you can download it form here [https://chromium.woolyss.com](https://chromium.woolyss.com) download the archive, unzip it and check in the tree if there is **chrome.exe** cause thats what we need.
 
-### 3 - Clone this repo
+### 3 - Update chrome binary path
 
 open `main.py` and go to line #21 and change the chrome binary path.
 
-### 3 - Run it !
+### 4 - Run it !
 
 ```py
 pip install -r requirements.txt
